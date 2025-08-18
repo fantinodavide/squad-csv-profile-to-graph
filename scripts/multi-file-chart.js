@@ -60,6 +60,15 @@ export class CsvProfileProcessor extends EventEmitter {
         const cpuColumns = [];
         headers.forEach((header, index) => {
             if (header.startsWith('Exclusive/GameThread/')) {
+                // // Exclude parent/duplicate columns to avoid double counting
+                // if (header.startsWith('Exclusive/GameThread/EventWait')) {
+                //     // Skip parent EventWait - we'll include the specific EventWait/* subcategories
+                //     return;
+                // }
+                // if (header.startsWith('Exclusive/GameThread/ReplicateActor')) {
+                //     // Skip ReplicateActor - we'll use ServerReplicateActors instead
+                //     return;
+                // }
                 cpuColumns.push(index);
             }
         });
@@ -108,7 +117,7 @@ export class CsvProfileProcessor extends EventEmitter {
 
         const tps = 1000 / frameTimeMS;
         const cpuTotal = row.cpuTotal || 0;
-        const cpuPerc = cpuTotal / frameTimeMS * 100;
+        const cpuPerc = cpuTotal / (frameTimeMS * 1.6) * 100;
         // console.log(cpuPerc)
 
         this.#dataStore.incrementRateCounter('TPS', 1, row.time)
