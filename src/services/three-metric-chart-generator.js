@@ -79,10 +79,10 @@ export default class ThreeMetricChartGenerator {
                 maintainAspectRatio: false,
                 layout: {
                     padding: {
-                        left: canvasHeight / 10,
-                        right: canvasHeight / 40,
-                        top: canvasHeight / 15,
-                        bottom: canvasHeight / 33 * 1.5
+                        left: canvasHeight / 20,
+                        right: canvasHeight / 20,
+                        top: canvasHeight / 40,
+                        bottom: canvasHeight / 40
                     }
                 },
                 scales: {
