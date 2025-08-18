@@ -1,0 +1,42 @@
+{
+  "name": "csv-graph-tool",
+  "version": "1.0.0",
+  "description": "A tool for reading CSV files and generating performance graphs with memory usage and tickrate analysis",
+  "main": "csv-graph-tool.js",
+  "type": "module",
+  "scripts": {
+    "chart": "node scripts/multi-file-chart.js"
+  },
+  "keywords": [
+    "csv",
+    "charts",
+    "performance",
+    "memory",
+    "tickrate",
+    "tps",
+    "analysis",
+    "visualization"
+  ],
+  "author": "CSV Graph Tool",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "chart.js": "^4.4.0",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-zoom": "^2.0.1",
+    "heap-js": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "bin": {
+    "csv-graph": "./cli.js"
+  }
+}
