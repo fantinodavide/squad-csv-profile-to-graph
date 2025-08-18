@@ -2,10 +2,10 @@
   "name": "csv-graph-tool",
   "version": "1.0.0",
   "description": "A tool for reading CSV files and generating performance graphs with memory usage and tickrate analysis",
-  "main": "csv-graph-tool.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "chart": "node scripts/multi-file-chart.js"
+    "chart": "node index.js"
   },
   "keywords": [
     "csv",

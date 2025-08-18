@@ -17,6 +17,7 @@ const FIXED_RANGES = {
 export default class ThreeMetricChartGenerator {
     constructor(canvas, canvasWidth, canvasHeight, data, options = {}) {
         this.basename = options.basename || 'Chart';
+        this.titleOverride = options.title || null;
         Chart.defaults.font.size = Math.round(canvasHeight / 50);
 
         // Get available metrics from the data store
@@ -67,7 +68,28 @@ export default class ThreeMetricChartGenerator {
             }
         };
 
-        Chart.register(backgroundGradient, annotationPlugin, dynamicTickPlugin);
+        // Plugin to add signature
+        const signaturePlugin = {
+            id: 'signature',
+            afterDraw: (chart) => {
+                const ctx = chart.ctx;
+                ctx.save();
+                
+                // Set signature style
+                ctx.fillStyle = '#777';
+                ctx.font = `${Math.round(canvasHeight / 70)}px Arial`;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                
+                // Draw signature in bottom right corner
+                const padding = Math.round(canvasHeight / 80);
+                ctx.fillText('Made with ♥ by JetDave', chart.width - padding, chart.height - padding);
+                
+                ctx.restore();
+            }
+        };
+
+        Chart.register(backgroundGradient, annotationPlugin, dynamicTickPlugin, signaturePlugin);
 
         const chartConfig = {
             type: "line",
@@ -98,10 +120,34 @@ export default class ThreeMetricChartGenerator {
                         },
                         ticks: {
                             color: '#FFFFFF',
-                            maxTicksLimit: 10,
                             callback: function (value) {
-                                return (value / 60000).toFixed(1);
+                                const minutes = Math.round(value / 60000);
+                                return minutes;
                             }
+                        },
+                        afterBuildTicks: function(scale) {
+                            const min = scale.min;
+                            const max = scale.max;
+                            const duration = max - min;
+                            const interval = 300000; // 10 minutes in ms
+                            
+                            const ticks = [];
+                            
+                            // Generate ticks at 10-minute intervals
+                            for (let i = 0; i <= Math.ceil(duration / interval); i++) {
+                                const tickValue = min + (i * interval);
+                                if (tickValue <= max) {
+                                    ticks.push({ value: tickValue });
+                                }
+                            }
+                            
+                            // Always include the max value if it's not already included
+                            const lastTick = ticks[ticks.length - 1];
+                            if (!lastTick || lastTick.value < max) {
+                                ticks.push({ value: max });
+                            }
+                            
+                            scale.ticks = ticks;
                         },
                         grid: {
                             color: '#FFFFFF22'
@@ -202,7 +248,7 @@ export default class ThreeMetricChartGenerator {
                     },
                     title: {
                         display: true,
-                        text: `${this.basename}`,
+                        text: this.titleOverride || `${this.basename}`,
                         color: '#FFFFFF',
                         font: {
                             size: Math.round(canvasHeight / 40),
