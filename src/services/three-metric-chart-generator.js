@@ -316,7 +316,7 @@ export default class ThreeMetricChartGenerator {
             memory: null,
             tps: null,
             cpuTime: null,
-            cpuPerc: null,
+            // cpuPerc: null,
             frameTime: null,
             playerCount: null
         };
@@ -340,10 +340,10 @@ export default class ThreeMetricChartGenerator {
         if (cpuLoadKeys.length > 0) metrics.cpuTime = cpuLoadKeys[ 0 ];
 
         // Detect CPU perc metrics
-        const cpuPercKeys = allKeys.filter(key =>
-            key.toLowerCase().includes('cpu') && key.toLowerCase().includes('%')
-        );
-        if (cpuPercKeys.length > 0) metrics.cpuPerc = cpuPercKeys[ 0 ];
+        // const cpuPercKeys = allKeys.filter(key =>
+        //     key.toLowerCase().includes('cpu') && key.toLowerCase().includes('%')
+        // );
+        // if (cpuPercKeys.length > 0) metrics.cpuPerc = cpuPercKeys[ 0 ];
 
         // Detect FrameTime (for TPS calculation)
         const frameTimeKeys = allKeys.filter(key =>
