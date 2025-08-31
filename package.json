@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "chart": "node index.js"
+    "chart": "node index.js",
+    "chart:docker": "docker run -it --rm -v .:/wd --user root -w /wd node:iron npm run chart"
   },
   "keywords": [
     "csv",

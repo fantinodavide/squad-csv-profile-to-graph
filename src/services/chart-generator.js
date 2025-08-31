@@ -204,8 +204,8 @@ export default class ThreeMetricChartGenerator {
                                 // Show memory, CPU and player values for this scale point
                                 const memoryVal = (value / scaleInfo.memoryScale).toFixed(0);
                                 const cpuVal = (value / scaleInfo.cpuTimeScale).toFixed(1);
-                                const cpuPerc = (value / scaleInfo.cpuLoadScale).toFixed(1);
-                                return `${memoryVal}MB | ${cpuVal}ms | ${cpuPerc}%`;
+                                // const cpuPerc = (value / scaleInfo.cpuLoadScale).toFixed(1);
+                                return `${memoryVal}MB | ${cpuVal}ms`;
                             }
                         },
                         grid: {

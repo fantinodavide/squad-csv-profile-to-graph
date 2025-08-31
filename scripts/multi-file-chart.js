@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import { createReadStream } from 'fs';
-import { createInterface } from 'readline';
-import { createCanvas } from 'canvas';
 import { EventEmitter } from 'events';
 import DataStore from '../src/services/data-store.js';
-import ThreeMetricChartGenerator from '../src/services/three-metric-chart-generator.js';
 
 const SAMPLE_RATE = 500;
+const IN_DEPTH_ANALYSIS = true;
 
 export class CsvProfileProcessor extends EventEmitter {
     #columnMap = null
@@ -19,6 +15,8 @@ export class CsvProfileProcessor extends EventEmitter {
     #tpsCounter = 0
     #lastSecond = 0
     #sampleCounter = 0
+
+    generalStats = []
 
     time = 0;
 
@@ -77,8 +75,17 @@ export class CsvProfileProcessor extends EventEmitter {
             memory: headers.indexOf('PhysicalUsedMB'),
             frameTime: headers.indexOf('FrameTime'),
             cpuColumns: cpuColumns, // Array of all CPU column indices
-            playerCount: headers.indexOf('Replication/Connections')
+            playerCount: headers.indexOf('Replication/Connections'),
+            raw: headers
         };
+
+        if (IN_DEPTH_ANALYSIS) {
+            headers.forEach((h, i) => {
+                this.generalStats[ i ] = 0;
+                // this.#dataStore.setInfiniteMapValue('general_stats', i, 0)
+                // columnMap.raw[ h ] = i
+            })
+        }
 
         // Remove missing columns (except cpuColumns which is an array)
         Object.keys(columnMap).forEach(key => {
@@ -92,7 +99,7 @@ export class CsvProfileProcessor extends EventEmitter {
 
     extractDataPoint(line) {
         const values = line.split(',');
-        const row = { index: this.#lineCount };
+        const row = { index: this.#lineCount, raw: {} };
 
         Object.entries(this.#columnMap).forEach(([ key, indexOrArray ]) => {
             if (key === 'cpuColumns') {
@@ -101,12 +108,30 @@ export class CsvProfileProcessor extends EventEmitter {
                 indexOrArray.forEach(index => {
                     row.cpuTotal += parseFloat(values[ index ]) || 0;
                 });
-            } else {
+            } else if (key != 'raw') {
                 row[ key ] = parseFloat(values[ indexOrArray ]) || 0;
             }
         });
 
+        if (IN_DEPTH_ANALYSIS)
+            values.forEach((_v, i) => {
+                const v = +_v;
+                if (isNaN(v))
+                    return;
+                this.generalStats[ i ] += v;
+            });
+
         return row;
+    }
+
+    finalizeGeneralStats() {
+        const ret = {};
+        this.generalStats.forEach((v, i) => {
+            const header = this.#columnMap.raw[ i ];
+            if (!header) return;
+            ret[ header ] = v / this.#lineCount;
+        });
+        return ret;
     }
 
     updateMetrics(row) {
@@ -131,6 +156,10 @@ export class CsvProfileProcessor extends EventEmitter {
         }
 
         this.#dataStore.setNewCounterValue('Player Count', row.playerCount || 0, undefined, row.time, true, true);
+
+        // Object.entries(row.raw).forEach((v, i) => {
+        //     this.#dataStore.incrementCounter(v[ 0 ], v[ 1 ])
+        // })
 
         // Build processed data on the fly
         this.#processedData.push({

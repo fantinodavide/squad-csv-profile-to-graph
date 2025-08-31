@@ -5,7 +5,9 @@ import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import { createCanvas } from 'canvas';
 import { CsvProfileProcessor } from './scripts/multi-file-chart.js';
-import ThreeMetricChartGenerator from './src/services/three-metric-chart-generator.js';
+import ChartGenerator from './src/services/chart-generator.js';
+import path from 'path';
+import { StatsComparer } from './scripts/stats-comparer.js';
 
 async function generateMultiFileChart() {
     console.log('📊 Multi-File 3-Metric Chart Generator\n');
@@ -13,7 +15,7 @@ async function generateMultiFileChart() {
     try {
         // Get input files
         const inputDir = './input';
-        const files = fs.readdirSync(inputDir).filter(f => f.endsWith('.csv'));
+        const files = fs.readdirSync(inputDir, { recursive: true }).filter(f => f.endsWith('.csv'));
         if (files.length === 0) throw new Error('No CSV files found');
 
         console.log(`📁 Found ${files.length} CSV file(s):`);
@@ -39,10 +41,61 @@ async function generateMultiFileChart() {
             await processAllFiles(inputDir, files);
         }
 
+
+        const compFiles = fs.readdirSync('./output', { recursive: true }).filter(f => f.endsWith('.json'));
+        const groupedCompFiles = compFiles.reduce((acc, cur) => {
+            const mapName = path.basename(cur).split('_')[ 0 ];
+            const dirname = path.dirname(cur);
+
+            if (!acc[ mapName ])
+                acc[ mapName ] = {
+                    reference: null,
+                    referenceName: null,
+                    candidate: null,
+                    candidateName: null,
+                    comparisonOutput: null,
+                    mdSummary: ''
+                };
+
+            const stats = JSON.parse(fs.readFileSync('./output/' + cur));
+            if (dirname.toUpperCase().includes('UE4')) {
+                acc[ mapName ].reference = stats;
+                acc[ mapName ].referenceName = cur;
+            } else if(dirname.toUpperCase().includes('UE5')) {
+                acc[ mapName ].candidate = stats;
+                acc[ mapName ].candidateName = cur;
+            }
+
+            if (acc[ mapName ].reference && acc[ mapName ].candidate) {
+                acc[ mapName ].comparisonOutput = StatsComparer(acc[ mapName ].reference, acc[ mapName ].candidate);
+
+                acc[ mapName ].mdSummary += `# ${mapName}\n**Reference:** ${acc[ mapName ].referenceName}\n**Comparison candidate:** ${acc[ mapName ].candidateName}\n\n`
+                acc[ mapName ].mdSummary += `The values of "Exclusive/GameThread" reflect the processing duration (in milliseconds) for each task.\n_The following stats are based on averages._\n\n`
+                acc[ mapName ].mdSummary += Object.entries(acc[ mapName ].comparisonOutput)
+                    .filter(e => Boolean(e[ 1 ])).sort((a, b) => {
+                        const aIsGameThread = a[ 0 ].startsWith('Exclusive/GameThread');
+                        const bIsGameThread = b[ 0 ].startsWith('Exclusive/GameThread');
+
+                        if (aIsGameThread && !bIsGameThread) return -1;
+                        if (!aIsGameThread && bIsGameThread) return 1;
+
+                        return b[ 1 ].variationPerc - a[ 1 ].variationPerc;
+                    })
+                    .map(elm => (`- ${elm[ 0 ]} > **${elm[ 1 ].numToStringSymbol(elm[ 1 ].variationPerc)}%** _(${elm[ 1 ].numToStringSymbol(elm[ 1 ].variation, 6)})_`))
+                    .join('\n');
+
+                console.log('\n\n');
+                console.log(acc[ mapName ].mdSummary);
+            }
+
+            return acc;
+        }, {})
+
     } catch (error) {
         console.error('❌ Error:', error.message);
         process.exit(1);
     }
+
 }
 
 async function processAllFiles(inputDir, files) {
@@ -87,9 +140,15 @@ async function processSingleFile(inputDir, selectedFile, showSummary = true) {
 
     if (showSummary) console.log('\n');
     const dataStore = processor.getDataStore();
-    
+
     if (showSummary) console.log('🎨 Generating chart...');
+
+    const jsonStatsOutputPath = `./output/${basename}.ratios.json`;
+    fs.mkdirSync(path.dirname(jsonStatsOutputPath), { recursive: true })
+
     const outputPath = await generateChart(processor, dataStore, basename, selectedFile);
+
+    fs.writeFileSync(jsonStatsOutputPath, JSON.stringify(processor.finalizeGeneralStats(), null, 2));
 
     if (showSummary) {
         console.log('✅ chart generated successfully!');
@@ -115,7 +174,7 @@ async function generateChart(processor, dataStore, basename, filename) {
     }
 
     const canvas = createCanvas(width, height);
-    const chart = new ThreeMetricChartGenerator(canvas, width, height, dataStore, { basename });
+    const chart = new ChartGenerator(canvas, width, height, dataStore, { basename });
 
     const outputFile = `${basename}_readable-chart.png`;
     const outputPath = `./output/${outputFile}`;
