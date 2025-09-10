@@ -2,13 +2,13 @@ import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
 // Fixed range configuration - set to true to use fixed Y-axis ranges
-const USE_FIXED_RANGES = true;
+const USE_FIXED_RANGES = false;
 
 // Fixed range values (when USE_FIXED_RANGES is true)
 const FIXED_RANGES = {
     TPS: 75,
     PLAYERS: 125,
-    MEMORY_MB: 6144,
+    MEMORY_MB: 8192,
     CPU_MS: 150,
     CPU_LOAD_PERC: 110
 };
@@ -367,20 +367,17 @@ export default class ThreeMetricChartGenerator {
 
             // Calculate scaling factors to map fixed ranges to the TPS scale
             const memoryScale = yMax / FIXED_RANGES.MEMORY_MB;
-            const cpuTimeScale = yMax / FIXED_RANGES.CPU_MS;
-            const cpuLoadScale = yMax / FIXED_RANGES.CPU_LOAD_PERC;
+            const cpuTimeScale = /*yMax /*/ FIXED_RANGES.CPU_MS;
             const playerScale = yMax / FIXED_RANGES.PLAYERS;
 
             return {
                 yMax,
                 memoryScale,
                 cpuTimeScale,
-                cpuLoadScale,
                 playerScale,
                 maxTPS: FIXED_RANGES.TPS,
                 originalMemoryMax: FIXED_RANGES.MEMORY_MB,
                 originalCPUMax: FIXED_RANGES.CPU_MS,
-                originalCPULoadMax: FIXED_RANGES.CPU_LOAD_PERC,
                 originalPlayerMax: FIXED_RANGES.PLAYERS
             };
         }
@@ -405,7 +402,6 @@ export default class ThreeMetricChartGenerator {
                 yMax: FIXED_RANGES.TPS,
                 memoryScale: FIXED_RANGES.MEMORY_MB,
                 cpuTimeScale: FIXED_RANGES.CPU_MS,
-                cpuLoadScale: FIXED_RANGES.CPU_LOAD_PERC,
                 playerScale: FIXED_RANGES.PLAYERS
             };
         }
@@ -421,8 +417,8 @@ export default class ThreeMetricChartGenerator {
         const cpuData = data.getCounterData(metrics.cpuTime) || [];
         const playerData = data.getCounterData(metrics.playerCount) || [];
 
-        let memoryScale = 0.1; // Default scale
-        let cpuTimeScale = 10;     // Default scale
+        let memoryScale = 1; // Default scale
+        let cpuTimeScale = 1;     // Default scale
         let playerScale = 1;   // Default scale
 
         if (memoryData.length > 0) {
@@ -431,10 +427,10 @@ export default class ThreeMetricChartGenerator {
             memoryScale = (yMax * 0.8) / maxMemory;
         }
 
-        if (cpuData.length > 0) {
+        if (false && cpuData.length > 0) {
             const maxCPU = Math.max(...cpuData.map(d => d.y));
             // Scale CPU to fit within yMax range (use about 60% of range)
-            cpuTimeScale = (yMax * 0.6) / maxCPU;
+            cpuTimeScale = (yMax * 0.3) / maxCPU;
         }
 
         if (playerData.length > 0) {
